@@ -275,9 +275,82 @@ if btn:
         if other_feature.strip():
             feat_list.append(other_feature.strip())
 
+        # Build clean, teacher-friendly text
         purpose_txt = purpose if purpose != "Other" else "________"
-        fn_txt = ", ".join(fn_list) if fn_list else "________"
-        feat_txt = ", ".join(feat_list) if feat_list else "________"
+
+        # Convert common function labels to verb phrases so the sentence reads naturally
+        fn_map = {
+            "classifying": "classify",
+            "describing attributes": "describe attributes",
+            "comparing": "compare",
+            "generalising": "generalise",
+            "defining": "define",
+            "sequencing": "sequence",
+            "cause and effect": "explain cause and effect",
+            "clarifying": "clarify",
+            "giving reasons": "give reasons",
+            "supporting with evidence": "support claims with evidence",
+            "qualifying claims": "qualify claims",
+            "identifying": "identify",
+            "inferring": "infer",
+            "explaining relationships": "explain relationships",
+            "judging": "judge",
+            "weighing evidence": "weigh evidence",
+            "drawing conclusions": "draw conclusions",
+            "recommending": "make a recommendation",
+            "stating a position": "state a position",
+            "persuading": "persuade",
+            "conceding": "concede",
+            "counter-arguing": "counter-argue",
+            "giving commands": "give commands",
+            "specifying conditions": "specify conditions",
+            "warning": "warn",
+            "sequencing events": "sequence events",
+            "referencing time": "reference time",
+            "describing actions": "describe actions",
+            "expressing viewpoint": "express a viewpoint",
+            "reviewing learning": "review learning",
+            "considering next steps": "identify next steps",
+            "summarising": "summarise",
+            "selecting": "select key information",
+            "linking ideas": "link ideas",
+            "integrating sources": "integrate sources"
+        }
+
+        # Functions
+        fn_list = [f for f in functions if f != "Other"]
+        if other_function.strip():
+            fn_list.append(other_function.strip())
+        fn_verbs = [fn_map.get(f, f) for f in fn_list]
+
+        # Features (strip group prefix) and also filter out pure connector words accidentally chosen
+        feat_list_raw = [f.split(" — ", 1)[1] if " — " in f else f for f in features if f != "Other"]
+        if other_feature.strip():
+            feat_list_raw.append(other_feature.strip())
+
+        # If someone selected a connector word set by mistake, keep only feature-like items
+        connector_words = set(["because", "therefore", "however", "although", "whereas", "consequently"])
+        feat_list = [x for x in feat_list_raw if x.strip().lower() not in connector_words]
+
+        # Nicely join functions
+        if len(fn_verbs) == 0:
+            fn_txt = "________"
+        elif len(fn_verbs) == 1:
+            fn_txt = fn_verbs[0]
+        elif len(fn_verbs) == 2:
+            fn_txt = fn_verbs[0] + " and " + fn_verbs[1]
+        else:
+            fn_txt = ", ".join(fn_verbs[:-1]) + ", and " + fn_verbs[-1]
+
+        # Nicely join features
+        if len(feat_list) == 0:
+            feat_txt = "________"
+        elif len(feat_list) == 1:
+            feat_txt = feat_list[0]
+        elif len(feat_list) == 2:
+            feat_txt = feat_list[0] + " and " + feat_list[1]
+        else:
+            feat_txt = ", \".join(feat_list[:-1]) + ", and " + feat_list[-1]
 
         header_bits = []
         if subject.strip():
@@ -286,8 +359,18 @@ if btn:
             header_bits.append(year_level.strip())
         header_line = " | ".join(header_bits)
 
-        outcome = "Students will " + fn_txt + " using " + feat_txt + " to " + purpose_txt.lower() + " " + content_focus.strip() + ", shown by " + evidence.lower() + "."
+        # Avoid awkward "to to" and make purpose clause grammatical
+        purpose_clause = purpose_txt.lower()
+        if purpose_clause.startswith("to \ "):
+            purpose_clause = purpose_clause[3:]
 
+        # Final outcome sentence
+        if feat_txt == "________":
+            outcome = "Students will " + fn_txt + " in order to " + purpose_clause + " " + content_focus.strip() + ", shown by " + evidence.lower() + "."
+        else:
+            outcome = "Students will " + fn_txt + " using " + feat_txt + " in order to " + purpose_clause + " " + content_focus.strip() + ", shown by " + evidence.lower() + "."
+
+        st.subheader("Your ALD outcome")
         st.subheader("Your ALD outcome")
         if header_line:
             st.caption(header_line)
