@@ -1,6 +1,44 @@
 import streamlit as st
 import re
 
+
+
+def _to_ing(verb_phrase):
+    vp = (verb_phrase or "").strip()
+    if not vp:
+        return "________"
+    # Crude but effective: convert common classroom stems
+    # If it's already gerund-like, keep it
+    if vp.lower().startswith("using "):
+        vp = vp[6:].strip()
+    # Split simple coordinated phrases: "state X and persuade" -> "stating X and persuading"
+    parts = [p.strip() for p in re.split(r"\s+and\s+", vp, flags=re.IGNORECASE) if p.strip()]
+    def _one(part):
+        tokens = part.split()
+        if not tokens:
+            return part
+        first = tokens[0]
+        rest = " ".join(tokens[1:])
+        fl = first.lower()
+        if fl.endswith("ing"):
+            ing = first
+        elif fl.endswith("e") and len(fl) > 2 and fl not in ["be", "see"]:
+            ing = first[:-1] + "ing"
+        else:
+            ing = first + "ing"
+        return (ing + (" " + rest if rest else "")).strip()
+    converted = " and ".join([_one(p) for p in parts])
+    return converted
+
+
+def _normalize_content_focus_text(content_focus):
+    cf = (content_focus or "").strip()
+    if not cf:
+        return "________"
+    # Remove leading stems like "Be able to" / "Students will be able to" / "To"
+    cf2 = re.sub(r"^(students\s+will\s+be\s+able\s+to\s+|be\s+able\s+to\s+|to\s+)", "", cf, flags=re.IGNORECASE).strip()
+    # Ensure it reads like an infinitive after "be able to"
+    return cf2
 def _normalize_purpose_text(purpose_text):
     # Make purpose safe to embed after 'in order to'
     if purpose_text is None:
@@ -401,9 +439,9 @@ if btn:
 
         # Final outcome sentence
         if feat_txt == "________":
-            outcome = "Students will " + fn_txt + " in order to " + _normalize_purpose_text(purpose_clause) + " " + content_focus.strip() + ", shown by " + evidence.lower() + "."
+            outcome = "Students will be able to " + _normalize_content_focus_text(content_focus) + " by " + _to_ing(fn_txt) + " in order to " + _normalize_purpose_text(purpose_clause) + ", shown by " + evidence.lower() + "."
         else:
-            outcome = "Students will " + fn_txt + " using " + feat_txt + " in order to " + purpose_clause + " " + content_focus.strip() + ", shown by " + evidence.lower() + "."
+            outcome = "Students will be able to " + _normalize_content_focus_text(content_focus) + " by " + _to_ing(fn_txt) + " using " + feat_txt + " in order to " + _normalize_purpose_text(purpose_clause) + ", shown by " + evidence.lower() + "."
 
         st.subheader("Your ALD outcome")
         st.subheader("Your ALD outcome")
