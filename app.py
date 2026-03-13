@@ -350,7 +350,7 @@ if btn:
         elif len(feat_list) == 2:
             feat_txt = feat_list[0] + " and " + feat_list[1]
         else:
-            feat_txt = ", \".join(feat_list[:-1]) + ", and " + feat_list[-1]
+            feat_txt = ", ".join(feat_list[:-1]) + ", and " + feat_list[-1]
 
         header_bits = []
         if subject.strip():
