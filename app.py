@@ -1,4 +1,39 @@
 import streamlit as st
+import re
+
+def _normalize_purpose_text(purpose_text):
+    # Make purpose safe to embed after 'in order to'
+    if purpose_text is None:
+        return ""
+    purpose_clean = str(purpose_text).strip()
+    purpose_clean = re.sub(r"\s+", " ", purpose_clean)
+    # Remove leading 'to' or 'To' so we do not produce 'in order to to ...'
+    purpose_clean = re.sub(r"^(to)\s+", "", purpose_clean, flags=re.IGNORECASE)
+    return purpose_clean
+
+
+def _filter_feature_like_items(items):
+    # Filters out discourse exemplars and sentence starters that are not really 'features'
+    # Examples to exclude: 'The evidence shows...', 'This suggests...', 'therefore', 'however'
+    if items is None:
+        return []
+    filtered = []
+    for raw_item in items:
+        item = str(raw_item).strip()
+        if not item:
+            continue
+        item_lower = item.lower()
+        # Heuristics: ellipses, starter stems, and common connectors
+        if "..." in item_lower:
+            continue
+        if item_lower.startswith("the evidence"):
+            continue
+        if item_lower.startswith("this suggests"):
+            continue
+        if item_lower in ["therefore", "however", "moreover", "furthermore", "in conclusion", "additionally", "as a result"]:
+            continue
+        filtered.append(item)
+    return filtered
 
 st.set_page_config(page_title="ALD Outcome Builder", page_icon="📝", layout="centered")
 
@@ -366,7 +401,7 @@ if btn:
 
         # Final outcome sentence
         if feat_txt == "________":
-            outcome = "Students will " + fn_txt + " in order to " + purpose_clause + " " + content_focus.strip() + ", shown by " + evidence.lower() + "."
+            outcome = "Students will " + fn_txt + " in order to " + _normalize_purpose_text(purpose_clause) + " " + content_focus.strip() + ", shown by " + evidence.lower() + "."
         else:
             outcome = "Students will " + fn_txt + " using " + feat_txt + " in order to " + purpose_clause + " " + content_focus.strip() + ", shown by " + evidence.lower() + "."
 
